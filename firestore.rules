@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_admin == true;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Anyone can read their own user document
+      allow read: if isOwner(userId);
+      
+      // Users can only be created through backend
+      allow create: if false;
+      
+      // Users can update their own profile but NOT wallet_balance, is_active, or is_admin
+      allow update: if isOwner(userId) && 
+                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['wallet_balance', 'is_active', 'is_admin']);
+      
+      // Admins can read all users
+      allow read: if isAdmin();
+      
+      // No deletes
+      allow delete: if false;
+    }
+    
+    // Projects collection
+    match /projects/{projectId} {
+      // Everyone can read projects
+      allow read: if true;
+      
+      // Only admins can create, update, or delete projects
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Transactions collection
+    match /transactions/{transactionId} {
+      // Users can only read their own transactions
+      allow read: if isAuthenticated() && 
+                    resource.data.user_uid == request.auth.uid;
+      
+      // Admins can read all transactions
+      allow read: if isAdmin();
+      
+      // Only backend can create transactions
+      allow create, update, delete: if false;
+    }
+    
+    // User Investments collection
+    match /user_investments/{investmentId} {
+      // Users can read their own investments
+      allow read: if isAuthenticated() && 
+                    resource.data.user_uid == request.auth.uid;
+      
+      // Admins can read all investments
+      allow read: if isAdmin();
+      
+      // Only backend can create/modify investments
+      allow create, update, delete: if false;
+    }
+  }
+}

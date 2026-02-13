@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Project, UserInvestment, Transaction } from '@/types';
 import { Payment } from '@/components/Payment';
@@ -19,7 +19,7 @@ const BackgroundCarousel: React.FC = () => {
     {
       type: 'testimonial',
       title: '"Best investment platform in Uganda"',
-      description: 'I\'ve earned over UGX 500,000 in dividends in just 3 months. The platform is transparent and reliable.',
+      description: "I've earned over UGX 500,000 in dividends in just 3 months. The platform is transparent and reliable.",
       author: 'Sarah M., Kampala',
       image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800',
     },
@@ -55,6 +55,7 @@ const BackgroundCarousel: React.FC = () => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -151,6 +152,34 @@ export default function SinglePageApp() {
     slot_price: '', roi_percentage: '', image_url: ''
   });
 
+  const fetchDashboardData = useCallback(async () => {
+    if (!user) return;
+    try {
+      const token = await user.getIdToken();
+      const [invRes, txRes, refRes] = await Promise.all([
+        fetch('/api/investments', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/transactions?limit=10', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/referrals', { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const [invData, txData, refData] = await Promise.all([invRes.json(), txRes.json(), refRes.json()]);
+      setInvestments(invData.investments || []);
+      setTransactions(txData.transactions || []);
+      setReferralStats({ referral_count: refData.referral_count || 0, total_bonus: refData.total_bonus || 0 });
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    }
+  }, [user]);
+
+  const fetchProjects = useCallback(async () => {
+    try {
+      const res = await fetch('/api/projects?status=open&limit=100');
+      const data = await res.json();
+      setProjects(data.projects || []);
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (!user && view !== 'home' && view !== 'auth') {
       setView('home');
@@ -174,34 +203,7 @@ export default function SinglePageApp() {
     } else if (view === 'admin' && userData?.is_admin) {
       fetchProjects();
     }
-  }, [view, user, userData]);
-
-  const fetchDashboardData = async () => {
-    try {
-      const token = await user!.getIdToken();
-      const [invRes, txRes, refRes] = await Promise.all([
-        fetch('/api/investments', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/transactions?limit=10', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/referrals', { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
-      const [invData, txData, refData] = await Promise.all([invRes.json(), txRes.json(), refRes.json()]);
-      setInvestments(invData.investments || []);
-      setTransactions(txData.transactions || []);
-      setReferralStats({ referral_count: refData.referral_count || 0, total_bonus: refData.total_bonus || 0 });
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-    }
-  };
-
-  const fetchProjects = async () => {
-    try {
-      const res = await fetch('/api/projects?status=open&limit=100');
-      const data = await res.json();
-      setProjects(data.projects || []);
-    } catch (err) {
-      console.error('Error fetching projects:', err);
-    }
-  };
+  }, [view, user, userData, fetchDashboardData, fetchProjects]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -411,7 +413,7 @@ export default function SinglePageApp() {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Navigation */}
+      {/* Navigation and other components */}
       <nav className="bg-gradient-to-r from-black via-gray-900 to-black border-b border-yellow-600/30 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <button onClick={() => setView('home')} className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">
@@ -423,7 +425,6 @@ export default function SinglePageApp() {
                 <button onClick={() => setView('dashboard')} className="text-white hover:text-yellow-400 transition">Dashboard</button>
                 <button onClick={() => setView('projects')} className="text-white hover:text-yellow-400 transition">Projects</button>
                 {userData?.is_admin && <button onClick={() => setView('admin')} className="text-white hover:text-yellow-400 transition">Admin</button>}
-                {userData?.is_admin && <span className="px-2 py-1 bg-yellow-600 text-black text-xs rounded font-bold">ADMIN</span>}
                 <button onClick={() => { signOut(); setView('home'); }} className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black rounded-lg font-bold hover:from-yellow-600 hover:to-yellow-700 transition">Logout</button>
               </>
             ) : (

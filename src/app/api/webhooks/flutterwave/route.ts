@@ -3,6 +3,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import { PaymentMetadata } from '@/types';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const FLUTTERWAVE_SECRET = process.env.FLUTTERWAVE_SECRET_KEY!;
 const REGISTRATION_FEE = 20000;
@@ -62,9 +63,9 @@ export async function POST(request: NextRequest) {
         const bonusAmount = REGISTRATION_FEE * REFERRAL_BONUS_PERCENTAGE;
         const referrerRef = adminDb.collection('users').doc(metadata.referrer_uid);
         
-        batch.update(referrerRef, {
-          wallet_balance: admin.firestore.FieldValue.increment(bonusAmount),
-        });
+      batch.update(referrerRef, {
+        wallet_balance: FieldValue.increment(bonusAmount),
+      });
 
         const bonusRef = adminDb.collection('transactions').doc();
         batch.set(bonusRef, {

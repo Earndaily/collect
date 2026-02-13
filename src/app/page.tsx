@@ -1,4 +1,6 @@
-import SinglePageApp from './single-page-app.tsx';
+'use client';
+
+import SinglePageApp from './single-page-app';
 
 export default function Page() {
   return <SinglePageApp />;

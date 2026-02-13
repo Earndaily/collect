@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,13 +9,13 @@ export default function PayActivationPage() {
   const router = useRouter();
   const { user, userData, refreshUserData } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
-
     if (userData) {
       if (userData.is_active) {
         router.push('/dashboard');
@@ -74,6 +73,25 @@ export default function PayActivationPage() {
             </div>
           )}
 
+          {/* Phone Number Input */}
+          <div className="mb-6">
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="256700000000"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
+              required
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Enter your phone number in format: 256XXXXXXXXX
+            </p>
+          </div>
+
           <div className="border-t dark:border-gray-700 pt-4 mb-6">
             <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
               <span>Total Amount:</span>
@@ -82,7 +100,7 @@ export default function PayActivationPage() {
           </div>
 
           <Payment
-            phoneNumber={userData.phoneNumber} // or wherever you store the phone number
+            phoneNumber={phoneNumber}
             amount={20000}
             email={userData.email}
             name={userData.email.split('@')[0]}

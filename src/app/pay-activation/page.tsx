@@ -82,6 +82,7 @@ export default function PayActivationPage() {
           </div>
 
           <Payment
+            phoneNumber={userData.phoneNumber} // or wherever you store the phone number
             amount={20000}
             email={userData.email}
             name={userData.email.split('@')[0]}

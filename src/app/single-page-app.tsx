@@ -55,8 +55,7 @@ const BackgroundCarousel: React.FC = () => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [slides.length]);
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -152,6 +151,20 @@ export default function SinglePageApp() {
     slot_price: '', roi_percentage: '', image_url: ''
   });
 
+  // REFERRAL STATE - NEW
+  const [referralUid, setReferralUid] = useState<string | null>(null);
+
+  // CAPTURE REFERRAL PARAMETER ON MOUNT - NEW
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      setReferralUid(ref);
+      setAuthMode('signup');
+      setView('auth');
+    }
+  }, []);
+
   const fetchDashboardData = useCallback(async () => {
     if (!user) return;
     try {
@@ -180,16 +193,27 @@ export default function SinglePageApp() {
     }
   }, []);
 
+  // IMPROVED ACTIVATION BLOCKING LOGIC - FIXED
   useEffect(() => {
     if (!user && view !== 'home' && view !== 'auth') {
       setView('home');
     } else if (user && userData) {
+      // Admins can access everything
       if (userData.is_admin) {
         return;
       }
-      if (!userData.is_active && view !== 'activation') {
-        setView('activation');
-      } else if (userData.is_active && view === 'activation') {
+      
+      // FORCE inactive users to activation page - BLOCK ALL OTHER VIEWS
+      if (!userData.is_active) {
+        if (view !== 'activation' && view !== 'home' && view !== 'auth') {
+          setView('activation');
+          setError('⚠️ Please complete your account activation to access this feature');
+          setTimeout(() => setError(''), 4000);
+        }
+      }
+      
+      // Redirect active users away from activation page
+      if (userData.is_active && view === 'activation') {
         setView('dashboard');
       }
     }
@@ -220,7 +244,8 @@ export default function SinglePageApp() {
           setLoading(false);
           return;
         }
-        await signUp(authForm.email, authForm.password, authForm.phone || null, null);
+        // USE REFERRAL UID - FIXED
+        await signUp(authForm.email, authForm.password, authForm.phone || null, referralUid);
         setTimeout(() => setView('activation'), 500);
       }
     } catch (err: any) {
@@ -233,7 +258,8 @@ export default function SinglePageApp() {
   const handleGoogleAuth = async () => {
     setLoading(true);
     try {
-      await signInWithGoogle(null);
+      // USE REFERRAL UID - FIXED
+      await signInWithGoogle(referralUid);
       setTimeout(() => setView('activation'), 500);
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed');
@@ -249,6 +275,8 @@ export default function SinglePageApp() {
     }
     if (!userData?.is_active && !userData?.is_admin) {
       setView('activation');
+      setError('⚠️ Please activate your account first to invest');
+      setTimeout(() => setError(''), 4000);
       return;
     }
     setSelectedProject(project);
@@ -284,7 +312,7 @@ export default function SinglePageApp() {
       const data = await response.json();
       
       if (response.ok) {
-        setSuccess('Project created successfully!');
+        setSuccess('✅ Project created successfully!');
         setProjectForm({ title: '', description: '', location: '', target_amount: '', slots_available: '', slot_price: '', roi_percentage: '', image_url: '' });
         fetchProjects();
         setTimeout(() => setSuccess(''), 3000);
@@ -302,7 +330,7 @@ export default function SinglePageApp() {
   const copyReferralLink = () => {
     const link = `${window.location.origin}?ref=${user?.uid}`;
     navigator.clipboard.writeText(link);
-    setSuccess('Referral link copied!');
+    setSuccess('✅ Referral link copied to clipboard!');
     setTimeout(() => setSuccess(''), 2000);
   };
 
@@ -387,7 +415,7 @@ export default function SinglePageApp() {
                   referrer_uid: userData.referrer_uid || undefined 
                 }}
                 onSuccess={async () => { 
-                  setSuccess('Payment successful! Activating your account...');
+                  setSuccess('✅ Payment successful! Activating your account...');
                   await new Promise(r => setTimeout(r, 3000)); 
                   await refreshUserData(); 
                   setView('dashboard'); 
@@ -413,7 +441,7 @@ export default function SinglePageApp() {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Navigation and other components */}
+      {/* Navigation */}
       <nav className="bg-gradient-to-r from-black via-gray-900 to-black border-b border-yellow-600/30 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <button onClick={() => setView('home')} className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">
@@ -422,8 +450,24 @@ export default function SinglePageApp() {
           <div className="flex items-center gap-4">
             {user ? (
               <>
-                <button onClick={() => setView('dashboard')} className="text-white hover:text-yellow-400 transition">Dashboard</button>
-                <button onClick={() => setView('projects')} className="text-white hover:text-yellow-400 transition">Projects</button>
+                <button onClick={() => {
+                  if (!userData?.is_active && !userData?.is_admin) {
+                    setError('⚠️ Please activate your account first');
+                    setTimeout(() => setError(''), 3000);
+                    setView('activation');
+                  } else {
+                    setView('dashboard');
+                  }
+                }} className="text-white hover:text-yellow-400 transition">Dashboard</button>
+                <button onClick={() => {
+                  if (!userData?.is_active && !userData?.is_admin) {
+                    setError('⚠️ Please activate your account first');
+                    setTimeout(() => setError(''), 3000);
+                    setView('activation');
+                  } else {
+                    setView('projects');
+                  }
+                }} className="text-white hover:text-yellow-400 transition">Projects</button>
                 {userData?.is_admin && <button onClick={() => setView('admin')} className="text-white hover:text-yellow-400 transition">Admin</button>}
                 <button onClick={() => { signOut(); setView('home'); }} className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black rounded-lg font-bold hover:from-yellow-600 hover:to-yellow-700 transition">Logout</button>
               </>
@@ -440,7 +484,7 @@ export default function SinglePageApp() {
 
       {/* Success/Error Messages */}
       {success && (
-        <div className="fixed top-20 right-4 z-50 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black px-6 py-3 rounded-lg shadow-lg font-semibold animate-pulse">
+        <div className="fixed top-20 right-4 z-50 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg shadow-lg font-semibold animate-pulse">
           {success}
         </div>
       )}
@@ -492,6 +536,17 @@ export default function SinglePageApp() {
               <h1 className="text-3xl font-bold text-yellow-400 mb-6">
                 {authMode === 'login' ? 'Login' : 'Create Account'}
               </h1>
+              
+              {/* REFERRAL INDICATOR - NEW */}
+              {referralUid && authMode === 'signup' && (
+                <div className="mb-4 p-3 bg-green-600/20 border border-green-600 rounded-lg">
+                  <p className="text-sm text-green-400 flex items-center gap-2">
+                    <span className="text-xl">🎉</span>
+                    You were referred! You&apos;ll both earn bonuses when you activate.
+                  </p>
+                </div>
+              )}
+              
               {error && <div className="mb-4 p-3 bg-red-600/20 border border-red-600 rounded-lg text-sm text-red-400">{error}</div>}
               <form onSubmit={handleAuth} className="space-y-4">
                 <div>
@@ -718,7 +773,12 @@ export default function SinglePageApp() {
                   email={userData.email}
                   name={userData.email.split('@')[0]}
                   metadata={{ user_uid: user.uid, payment_type: 'investment', project_id: selectedProject.id, slots }}
-                  onSuccess={() => { setSelectedProject(null); fetchProjects(); fetchDashboardData(); }}
+                  onSuccess={() => { 
+                    setSuccess('✅ Investment successful!');
+                    setSelectedProject(null); 
+                    fetchProjects(); 
+                    fetchDashboardData(); 
+                  }}
                   onClose={() => setSelectedProject(null)}
                   buttonText={`Invest UGX ${(selectedProject.slot_price * slots).toLocaleString()}`}
                 />

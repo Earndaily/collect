@@ -84,7 +84,7 @@ function SignUpForm() {
           {referrerUid && (
             <div className="mb-4 p-3 bg-green-100 dark:bg-green-900 rounded-lg">
               <p className="text-sm text-green-800 dark:text-green-200">
-                🎉 You were referred! You'll both earn bonuses when you activate.
+                🎉 You were referred! You&apos;ll both earn bonuses when you activate.
               </p>
             </div>
           )}

@@ -100,7 +100,7 @@ export default function DashboardPage() {
           Welcome back, {userData.email.split('@')[0]}!
         </h1>
         <p className="text-gray-600 dark:text-gray-300">
-          Here's your investment overview
+          Here&apos;s your investment overview
         </p>
       </div>
 

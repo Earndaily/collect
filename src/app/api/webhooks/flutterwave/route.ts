@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
+import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import { PaymentMetadata } from '@/types';
 
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
         const referrerRef = adminDb.collection('users').doc(metadata.referrer_uid);
         
         batch.update(referrerRef, {
-          wallet_balance: adminDb.FieldValue.increment(bonusAmount),
+          wallet_balance: admin.firestore.FieldValue.increment(bonusAmount),
         });
 
         const bonusRef = adminDb.collection('transactions').doc();
@@ -91,8 +92,8 @@ export async function POST(request: NextRequest) {
       }
 
       batch.update(projectRef, {
-        slots_available: adminDb.FieldValue.increment(-slotsToDeduct),
-        amount_raised: adminDb.FieldValue.increment(amount),
+        slots_available: admin.firestore.FieldValue.increment(-slotsToDeduct),
+        amount_raised: admin.firestore.FieldValue.increment(amount),
       });
 
       const investmentRef = adminDb.collection('user_investments').doc();

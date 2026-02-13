@@ -15,6 +15,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [slots, setSlots] = useState(1);
+  const [phoneNumber, setPhoneNumber] = useState(''); // ADD THIS
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('open');
 
   useEffect(() => {
@@ -50,11 +51,13 @@ export default function ProjectsPage() {
 
     setSelectedProject(project);
     setSlots(1);
+    setPhoneNumber(''); // RESET PHONE NUMBER
   };
 
   const handlePaymentSuccess = async () => {
     setSelectedProject(null);
     setSlots(1);
+    setPhoneNumber(''); // RESET PHONE NUMBER
     await fetchProjects();
     router.push('/dashboard');
   };
@@ -184,6 +187,24 @@ export default function ProjectsPage() {
               />
             </div>
 
+            {/* ADD PHONE NUMBER INPUT */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="256700000000"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                required
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Enter your phone number in format: 256XXXXXXXXX
+              </p>
+            </div>
+
             <div className="border-t dark:border-gray-700 pt-4">
               <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white mb-2">
                 <span>Total Amount:</span>
@@ -197,6 +218,7 @@ export default function ProjectsPage() {
 
             {user && userData && (
               <Payment
+                phoneNumber={phoneNumber} // ADD THIS
                 amount={totalAmount}
                 email={userData.email}
                 name={userData.email.split('@')[0]}

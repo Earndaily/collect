@@ -1,5 +1,4 @@
 'use client';
-
 import React from 'react';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { PaymentMetadata } from '@/types';
@@ -8,6 +7,7 @@ interface PaymentProps {
   amount: number;
   email: string;
   name: string;
+  phoneNumber: string; // Add this
   metadata: PaymentMetadata;
   onSuccess: () => void;
   onClose: () => void;
@@ -18,6 +18,7 @@ export const Payment: React.FC<PaymentProps> = ({
   amount,
   email,
   name,
+  phoneNumber, // Add this
   metadata,
   onSuccess,
   onClose,
@@ -32,6 +33,7 @@ export const Payment: React.FC<PaymentProps> = ({
     customer: {
       email,
       name,
+      phone_number: phoneNumber, // Add this
     },
     meta: metadata,
     customizations: {

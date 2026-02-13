@@ -145,6 +145,10 @@ export default function SinglePageApp() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
+  // ADD PHONE NUMBER STATES
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [activationPhoneNumber, setActivationPhoneNumber] = useState('');
+  
   const [authForm, setAuthForm] = useState({ email: '', password: '', confirmPassword: '', phone: '' });
   const [projectForm, setProjectForm] = useState({
     title: '', description: '', location: '', target_amount: '', slots_available: '',
@@ -281,6 +285,7 @@ export default function SinglePageApp() {
     }
     setSelectedProject(project);
     setSlots(1);
+    setPhoneNumber(''); // RESET PHONE NUMBER
   };
 
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -391,6 +396,25 @@ export default function SinglePageApp() {
                 </div>
               )}
 
+              {/* ADD PHONE NUMBER INPUT FOR ACTIVATION */}
+              <div className="mb-6">
+                <label htmlFor="activation-phone" className="block text-sm font-medium text-gray-300 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="activation-phone"
+                  value={activationPhoneNumber}
+                  onChange={(e) => setActivationPhoneNumber(e.target.value)}
+                  placeholder="256700000000"
+                  className="w-full px-4 py-2 bg-black border border-yellow-600/30 rounded-lg text-white focus:border-yellow-600 focus:outline-none"
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter your phone number in format: 256XXXXXXXXX
+                </p>
+              </div>
+
               <div className="border-t border-yellow-600/30 pt-4 mb-6">
                 <div className="flex justify-between items-center text-lg font-bold mb-2">
                   <span className="text-gray-300">Total Amount:</span>
@@ -406,6 +430,7 @@ export default function SinglePageApp() {
               )}
 
               <Payment
+                phoneNumber={activationPhoneNumber}
                 amount={20000}
                 email={userData.email}
                 name={userData.email.split('@')[0]}
@@ -762,6 +787,23 @@ export default function SinglePageApp() {
                 <input type="number" min="1" max={selectedProject.slots_available} value={slots} onChange={(e) => setSlots(parseInt(e.target.value) || 1)}
                   className="w-full px-4 py-2 bg-black border border-yellow-600/30 rounded-lg text-white focus:border-yellow-600 focus:outline-none" />
               </div>
+
+              {/* ADD PHONE NUMBER INPUT FOR INVESTMENT */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Phone Number</label>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="256700000000"
+                  className="w-full px-4 py-2 bg-black border border-yellow-600/30 rounded-lg text-white focus:border-yellow-600 focus:outline-none"
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter your phone number in format: 256XXXXXXXXX
+                </p>
+              </div>
+
               <div className="border-t border-yellow-600/30 pt-4">
                 <div className="flex justify-between text-lg font-bold text-white mb-2">
                   <span>Total:</span><span className="text-yellow-400">UGX {(selectedProject.slot_price * slots).toLocaleString()}</span>
@@ -769,6 +811,7 @@ export default function SinglePageApp() {
               </div>
               {user && userData && (
                 <Payment
+                  phoneNumber={phoneNumber}
                   amount={selectedProject.slot_price * slots}
                   email={userData.email}
                   name={userData.email.split('@')[0]}
@@ -776,10 +819,14 @@ export default function SinglePageApp() {
                   onSuccess={() => { 
                     setSuccess('✅ Investment successful!');
                     setSelectedProject(null); 
+                    setPhoneNumber(''); // RESET
                     fetchProjects(); 
                     fetchDashboardData(); 
                   }}
-                  onClose={() => setSelectedProject(null)}
+                  onClose={() => {
+                    setSelectedProject(null);
+                    setPhoneNumber(''); // RESET
+                  }}
                   buttonText={`Invest UGX ${(selectedProject.slot_price * slots).toLocaleString()}`}
                 />
               )}
